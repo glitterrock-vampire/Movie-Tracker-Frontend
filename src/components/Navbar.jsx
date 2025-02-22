@@ -1,6 +1,6 @@
-import React from 'react';
-import styled from 'styled-components';
-import { Link, useNavigate } from 'react-router-dom';
+import React from "react";
+import styled from "styled-components";
+import { Link, useNavigate } from "react-router-dom";
 
 const NavBarContainer = styled.nav`
   background-color: #fff;
@@ -23,22 +23,25 @@ const NavRight = styled.div`
 
 function Navbar() {
   const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem('access');
+  const isLoggedIn = !!localStorage.getItem("access");
 
   const handleLogout = () => {
-    localStorage.removeItem('access');
-    localStorage.removeItem('refresh');
-    navigate('/login');
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    navigate("/login");
   };
 
   return (
     <NavBarContainer>
-      <Title to="/">FilmKu</Title>
-      <NavRight>
+      {/* <Title to="/">FilmKu</Title> */}
+      {/* <NavRight>
         {isLoggedIn ? (
           <>
             <Link to="/profile">Profile</Link>
-            <button onClick={handleLogout} style={{ background: 'none', border: 'none' }}>
+            <button
+              onClick={handleLogout}
+              style={{ background: "none", border: "none" }}
+            >
               Logout
             </button>
           </>
@@ -48,7 +51,7 @@ function Navbar() {
             <Link to="/register">Register</Link>
           </>
         )}
-      </NavRight>
+      </NavRight> */}
     </NavBarContainer>
   );
 }
