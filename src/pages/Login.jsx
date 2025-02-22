@@ -1,28 +1,63 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios"; // Using axios instead of fetch for consistency with your dependencies
 
 const LoginPage = () => {
   // State for animation control
   const [isVisible, setIsVisible] = useState(false);
   const [isFormBouncing, setIsFormBouncing] = useState(false);
 
-  // Animation effect for title fade-in
+  // State for form and login
+  const [email, setEmail] = useState(""); // Changed from username to email
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Animation effect for title fade-in and form bounce
   useEffect(() => {
-    // Fade in the title after 500ms
     const titleTimer = setTimeout(() => {
       setIsVisible(true);
     }, 500);
 
-    // Bounce effect for form after 1000ms
     const formTimer = setTimeout(() => {
       setIsFormBouncing(true);
     }, 1000);
 
-    // Cleanup timers
     return () => {
       clearTimeout(titleTimer);
       clearTimeout(formTimer);
     };
   }, []);
+
+  // Handle login submission
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/token/", {
+        email, // Use email for authentication (matches CustomUser in Django)
+        password,
+      });
+
+      const data = response.data;
+
+      if (!response.status === 200) {
+        throw new Error(data.detail || "Login failed");
+      }
+
+      // Store tokens in localStorage
+      localStorage.setItem("accessToken", data.access);
+      localStorage.setItem("refreshToken", data.refresh);
+
+      // Redirect to dashboard
+      window.location.href = "/dashboard";
+    } catch (err) {
+      setError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const containerStyles = {
     backgroundColor: "#0D1B2A",
@@ -46,7 +81,7 @@ const LoginPage = () => {
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
-    opacity: isFormBouncing ? 1 : 0, // Initial opacity for fade-in
+    opacity: isFormBouncing ? 1 : 0,
     transition: "opacity 0.5s ease-in-out",
     animation: isFormBouncing ? "bounce 1s ease-in-out" : "none",
   };
@@ -60,14 +95,14 @@ const LoginPage = () => {
 
   const logoTextStyles = {
     color: "#00E05A",
-    fontSize: "75px",
+    fontSize: "80px",
     fontWeight: "600",
     lineHeight: "55.44px",
-    fontFamily: '"Poppins", sans-serif', // Stylish, clean, and modern font
+    fontFamily: '"Poppins", sans-serif',
     letterSpacing: "0",
     marginBottom: "10px",
-    opacity: isVisible ? 1 : 0, // Initial opacity for fade-in
-    transition: "opacity 1s ease-in-out", // Smooth fade-in animation
+    opacity: isVisible ? 1 : 0,
+    transition: "opacity 1s ease-in-out",
   };
 
   const inputStyles = {
@@ -81,7 +116,7 @@ const LoginPage = () => {
     outline: "none",
     fontSize: "16px",
     boxSizing: "border-box",
-    animation: isFormBouncing ? "bounce 0.5s ease-in-out" : "none", // Bounce animation for inputs
+    animation: isFormBouncing ? "bounce 0.5s ease-in-out" : "none",
   };
 
   const buttonStyles = {
@@ -96,10 +131,23 @@ const LoginPage = () => {
     fontWeight: "500",
     marginTop: "5px",
     boxSizing: "border-box",
-    animation: isFormBouncing ? "bounce 0.5s ease-in-out" : "none", // Bounce animation for button
+    animation: isFormBouncing ? "bounce 0.5s ease-in-out" : "none",
   };
 
-  // CSS keyframes for animations (inline for simplicity, but you can move to a CSS file)
+  const errorStyles = {
+    color: "red",
+    textAlign: "center",
+    marginBottom: "15px",
+    fontSize: "14px",
+  };
+
+  const loadingStyles = {
+    textAlign: "center",
+    color: "white",
+    marginBottom: "15px",
+    fontSize: "16px",
+  };
+
   const styles = `
     @keyframes bounce {
       0%, 20%, 50%, 80%, 100% {
@@ -116,7 +164,7 @@ const LoginPage = () => {
 
   return (
     <>
-      <style>{styles}</style> {/* Inject CSS keyframes */}
+      <style>{styles}</style>
       <div style={containerStyles}>
         <div style={formContainerStyles}>
           {/* Logo */}
@@ -127,18 +175,29 @@ const LoginPage = () => {
           </div>
 
           {/* Form */}
-          <div style={{ ...formGroupStyles, marginTop: "40px" }}>
+          <form
+            onSubmit={handleLogin}
+            style={{ ...formGroupStyles, marginTop: "40px" }}
+          >
+            {error && <div style={errorStyles}>{error}</div>}
+            {isLoading && <div style={loadingStyles}>Loading...</div>}
             <input
-              type="email"
-              placeholder="sesib18540@meogl.com"
+              type="email" // Changed back to email type for better UX
+              placeholder="movieuser@email.com" // Updated placeholder for email
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={inputStyles}
             />
             <input
               type="password"
               placeholder="••••••••••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={inputStyles}
             />
-            <button style={buttonStyles}>Login</button>
+            <button type="submit" style={buttonStyles}>
+              {isLoading ? "Logging in..." : "Login"}
+            </button>
 
             <div
               style={{
@@ -147,7 +206,7 @@ const LoginPage = () => {
                 color: "#808080",
                 fontSize: "14px",
                 width: "100%",
-                animation: isFormBouncing ? "fadeIn 0.5s ease-in-out" : "none", // Fade-in for signup text
+                animation: isFormBouncing ? "fadeIn 0.5s ease-in-out" : "none",
               }}
             >
               You don't have an account?{" "}
@@ -162,7 +221,7 @@ const LoginPage = () => {
                 SignUp
               </a>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </>
