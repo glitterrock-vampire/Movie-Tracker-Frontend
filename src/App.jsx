@@ -1,13 +1,13 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import MovieDetail from './pages/MovieDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import MovieDetail from "./pages/MovieDetail"; // Make sure this path is correct
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
-function App() {
+const App = () => {
   return (
     <Router>
       <Navbar />
@@ -22,6 +22,6 @@ function App() {
       </div>
     </Router>
   );
-}
+};
 
 export default App;

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Bookmark, Star, Search as SearchIcon } from "lucide-react";
+import { Bookmark, Star, Search as SearchIcon, Play } from "lucide-react";
 import api from "../services/api";
+import "./MovieDetail.css";
 
 const MovieDetail = () => {
   const { tmdbId } = useParams();
   const navigate = useNavigate();
   const [movie, setMovie] = useState(null);
   const [recommendedMovies, setRecommendedMovies] = useState([]);
+  const [videos, setVideos] = useState([]); // New state for videos
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,14 +18,8 @@ const MovieDetail = () => {
     const fetchMovieDetails = async () => {
       try {
         setLoading(true);
-        // Fetch movie details
-        const movieResponse = await api.get(`/movies/${tmdbId}/`);
-        setMovie(movieResponse.data);
-
-        // Fetch recommended movies
-        const recommendedResponse = await api.get("/recommendations/");
-        setRecommendedMovies(recommendedResponse.data.results || []);
-
+        const response = await api.get(`/movies/${tmdbId}/`);
+        setMovie(response.data);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching movie details:", err);
@@ -33,38 +28,53 @@ const MovieDetail = () => {
       }
     };
 
-    fetchMovieDetails();
+    if (tmdbId) {
+      fetchMovieDetails();
+    }
   }, [tmdbId]);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const response = await api.get(`/movies/${tmdbId}/recommendations/`);
+        setRecommendedMovies(response.data.results || []);
+      } catch (err) {
+        console.error("Error fetching recommendations:", err);
+        setRecommendedMovies([]);
+      }
+    };
 
-    try {
-      const response = await api.get(
-        `/movies/search/?query=${encodeURIComponent(searchQuery)}`
-      );
-      setSearchResults(response.data.results);
-      // Navigate to search results page or show results in a modal
-      navigate("/search", {
-        state: { results: response.data.results, query: searchQuery },
-      });
-    } catch (err) {
-      console.error("Search error:", err);
+    if (tmdbId) {
+      fetchRecommendations();
     }
-  };
+  }, [tmdbId]);
+
+  // Fetch movie videos
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await api.get(`/movies/${tmdbId}/videos/`);
+        setVideos(response.data.videos || []);
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+        setVideos([]);
+      }
+    };
+
+    if (tmdbId) {
+      fetchVideos();
+    }
+  }, [tmdbId]);
 
   const handleMovieSelect = (selectedMovieId) => {
-    navigate(`/movie/${selectedMovieId}`);
+    navigate(`/movies/${selectedMovieId}`);
   };
 
   const handleAddToWatchlist = async () => {
     try {
       await api.post(`/collection/${tmdbId}/`);
-      // TODO: Add success notification
     } catch (err) {
       console.error("Error adding to watchlist:", err);
-      // TODO: Add error notification
     }
   };
 
@@ -84,116 +94,114 @@ const MovieDetail = () => {
     return null;
   }
 
+  const getImageUrl = (path, size = "w500") => {
+    return path
+      ? `https://image.tmdb.org/t/p/${size}${path}`
+      : "/path/to/placeholder-image.jpg";
+  };
+
+  // Find the first YouTube trailer
+  const trailer = videos.find(
+    (video) => video.site === "YouTube" && video.type === "Trailer"
+  );
+
   return (
     <div className="movie-detail-container">
-      {/* Header with Logo and Search */}
       <header className="app-header">
-        <div className="logo-search-container">
-          <div className="app-title">
-            <span className="block">The</span>
-            <span className="block">
-              Movie
-              <form onSubmit={handleSearch} className="inline-search-form">
-                <input
-                  type="text"
-                  placeholder="Search a movie or a series"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-bar"
-                />
-                <button type="submit" className="search-button">
-                  <SearchIcon size={20} />
-                </button>
-              </form>
-            </span>
-            <span className="block">Tracker</span>
-          </div>
+        <div className="app-title">
+          <span>The</span>
+          <span>Movie</span>
+          <span>Tracker</span>
         </div>
       </header>
 
-      {/* Movie Detail Content */}
-      <div className="movie-detail-content">
-        <div className="movie-detail-left">
+      <main>
+        <div className="movie-header">
           <h1 className="movie-title">{movie.title}</h1>
-
-          <div className="movie-genre-tags">
-            {movie.genres &&
-              movie.genres.map((genre) => (
-                <span key={genre.id} className="genre-tag">
-                  {genre.name}
-                </span>
-              ))}
-          </div>
-
-          <div className="movie-poster">
-            <img
-              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-              alt={movie.title}
-              onError={(e) => {
-                e.target.src = "/path/to/placeholder-image.jpg";
-              }}
-            />
-          </div>
-
-          <div className="movie-rating">
-            <div className="imdb-rating">
-              <Star className="star-icon" />
-              <span>{movie.vote_average.toFixed(1)}/10</span>
-              <span className="review-count">
-                {movie.vote_count ? `${movie.vote_count} Reviews` : ""}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="movie-detail-right">
-          <p className="movie-synopsis">{movie.overview}</p>
-
-          <div className="movie-additional-info">
-            <div className="info-item">
-              <span className="info-label">Release Date:</span>
-              <span>{movie.release_date}</span>
-            </div>
-            {movie.runtime && (
-              <div className="info-item">
-                <span className="info-label">Runtime:</span>
-                <span>{movie.runtime} minutes</span>
-              </div>
-            )}
-          </div>
-
           <button className="add-to-watchlist" onClick={handleAddToWatchlist}>
-            <Bookmark />
+            <Bookmark size={20} />
             Add to watchlist
           </button>
         </div>
-      </div>
 
-      {/* Recommended Movies Section */}
-      <div className="recommended-movies">
-        <h2>Recommended</h2>
-        <div className="recommended-grid">
-          {recommendedMovies.map((recommendedMovie) => (
-            <div
-              key={recommendedMovie.id}
-              className="recommended-movie-card"
-              onClick={() => handleMovieSelect(recommendedMovie.tmdb_id)}
-            >
-              <img
-                src={`https://image.tmdb.org/t/p/w500${recommendedMovie.poster_path}`}
-                alt={recommendedMovie.title}
-                onError={(e) => {
-                  e.target.src = "/path/to/placeholder-image.jpg";
-                }}
-              />
-              <div className="movie-rating">
-                <Star className="star-icon" />
-                <span>{recommendedMovie.vote_average.toFixed(1)}</span>
-              </div>
-            </div>
+        <div className="movie-genre-tags">
+          {movie.genres?.map((genre) => (
+            <span key={genre.id} className="genre-tag">
+              {genre.name}
+            </span>
           ))}
         </div>
-      </div>
+
+        <div className="movie-main-content">
+          <div className="movie-poster-section">
+            <img
+              src={getImageUrl(movie.poster_path)}
+              alt={movie.title}
+              className="movie-poster"
+            />
+            <div className="movie-stats">
+              <div className="imdb-rating">
+                <Star className="star-icon" />
+                <span>{movie.vote_average?.toFixed(1)}/10</span>
+                <span className="review-count">
+                  {movie.vote_count ? `${movie.vote_count} Reviews` : ""}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="movie-info-section">
+            <p className="movie-synopsis">{movie.overview}</p>
+
+            {/* Display the trailer if available */}
+            {trailer && (
+              <div className="trailer-section">
+                <h2>Watch Trailer</h2>
+                <iframe
+                  width="100%"
+                  height="315"
+                  src={`https://www.youtube.com/embed/${trailer.key}`}
+                  title={trailer.name}
+                  frameBorder="0"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            )}
+
+            <div className="movie-additional-info">
+              <div className="info-item">
+                <span className="info-label">Release Date</span>
+                <span>{movie.release_date}</span>
+              </div>
+              {movie.runtime && (
+                <div className="info-item">
+                  <span className="info-label">Runtime</span>
+                  <span>{movie.runtime} minutes</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <section className="recommended-section">
+          <h2>Recommended</h2>
+          <div className="recommended-grid">
+            {recommendedMovies.map((movie) => (
+              <div
+                key={movie.id}
+                className="recommended-movie-card"
+                onClick={() => handleMovieSelect(movie.tmdb_id)}
+              >
+                <img src={getImageUrl(movie.poster_path)} alt={movie.title} />
+                <div className="movie-rating">
+                  <Star size={14} className="star-icon" />
+                  <span>{movie.vote_average?.toFixed(1)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

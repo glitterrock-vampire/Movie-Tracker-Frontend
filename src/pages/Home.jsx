@@ -25,9 +25,8 @@ const MovieCard = ({ movie }) => {
       validPath || "https://via.placeholder.com/300x450.png?text=Movie+Poster"
     );
   }, [movie]);
-
   const handleMovieClick = () => {
-    navigate(`/movie/${movie.tmdb_id}`);
+    navigate(`/movies/${movie.tmdb_id}`); // Changed from /movie to /movies
   };
 
   return (
