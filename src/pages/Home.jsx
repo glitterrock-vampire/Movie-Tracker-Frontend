@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "./MovieTracker.css";
 
 // Movie Card Component
 const MovieCard = ({ movie }) => {
+  const navigate = useNavigate();
   const [imageSrc, setImageSrc] = useState("");
 
   useEffect(() => {
@@ -24,9 +26,18 @@ const MovieCard = ({ movie }) => {
     );
   }, [movie]);
 
+  const handleMovieClick = () => {
+    navigate(`/movie/${movie.tmdb_id}`);
+  };
+
   return (
     <div className="movie-card">
-      <img src={imageSrc} alt={movie.title} className="movie-card-image" />
+      <img
+        src={imageSrc}
+        alt={movie.title}
+        className="movie-card-image cursor-pointer"
+        onClick={handleMovieClick}
+      />
       {movie.vote_average && (
         <div className="movie-rating">
           <span className="mr-1">★</span>
@@ -37,7 +48,9 @@ const MovieCard = ({ movie }) => {
         <h3>{movie.title}</h3>
         <div className="movie-actions">
           <button className="btn btn-watch">Watch</button>
-          <button className="btn btn-info">Info</button>
+          <button className="btn btn-info" onClick={handleMovieClick}>
+            Info
+          </button>
         </div>
       </div>
     </div>
@@ -87,23 +100,25 @@ function Home() {
 
   return (
     <div className="app-container">
-      {/* App Title */}
-      <div className="app-title">
-        <span className="block">The</span>
-        <span className="block">Movie</span>
-        <span className="block">Tracker</span>
+      {/* App Title and Search Bar Container */}
+      <div className="title-search-container">
+        <div className="app-title">
+          <span className="block">The</span>
+          <span className="block">
+            Movie
+            <form onSubmit={handleSearch} className="inline-search-form">
+              <input
+                type="text"
+                placeholder="Search a movie or a series"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-bar"
+              />
+            </form>
+          </span>
+          <span className="block">Tracker</span>
+        </div>
       </div>
-
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="mb-8">
-        <input
-          type="text"
-          placeholder="Search a movie or a series"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="search-bar"
-        />
-      </form>
 
       {/* Currently Showing Section */}
       <section className="mb-8">

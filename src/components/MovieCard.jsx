@@ -1,51 +1,60 @@
-// src/components/MovieCard.jsx
-import React from 'react';
-import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
+import api from "../services/api";
+import "./MovieTracker.css";
 
-const Card = styled.div`
-  width: 100%;
-  background-color: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 0 0.5rem 1rem;  /* some spacing */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-`;
+const MovieCard = ({ movie }) => {
+  const navigate = useNavigate();
+  const [imageSrc, setImageSrc] = useState("");
 
-const Poster = styled.img`
-  width: 100%;
-  height: auto;  /* maintain aspect ratio */
-  display: block;
-`;
+  useEffect(() => {
+    const possiblePaths = [
+      movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : null,
+      movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`
+        : null,
+    ];
 
-const Info = styled.div`
-  padding: 0.5rem;
-  h3 {
-    margin-bottom: 0.25rem;
-    font-size: 1rem;
-  }
-  p {
-    margin: 0;
-    color: #555;
-  }
-`;
+    const validPath = possiblePaths.find((path) => path !== null);
+    setImageSrc(
+      validPath || "https://via.placeholder.com/300x450.png?text=Movie+Poster"
+    );
+  }, [movie]);
 
-function MovieCard({ movie }) {
-  const posterUrl = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
-    : 'https://via.placeholder.com/300x450?text=No+Image'; // fallback if no poster
+  const handleMovieClick = () => {
+    // Ensure you're using the correct identifier
+    // This might be 'id' or 'tmdb_id' depending on your API
+    navigate(`/movie/${movie.id || movie.tmdb_id}`);
+  };
 
   return (
-    <Card>
-      <Link to={`/movies/${movie.tmdb_id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <Poster src={posterUrl} alt={movie.title} />
-        <Info>
-          <h3>{movie.title}</h3>
-          <p>⭐ {movie.vote_average || 'N/A'}</p>
-        </Info>
-      </Link>
-    </Card>
+    <div className="movie-card">
+      <img
+        src={imageSrc}
+        alt={movie.title}
+        className="movie-card-image cursor-pointer"
+        onClick={handleMovieClick}
+      />
+      {movie.vote_average && (
+        <div className="movie-rating">
+          <span className="mr-1">★</span>
+          {movie.vote_average.toFixed(1)}
+        </div>
+      )}
+      <div className="movie-card-overlay">
+        <h3>{movie.title}</h3>
+        <div className="movie-actions">
+          <button className="btn btn-watch">Watch</button>
+          <button className="btn btn-info" onClick={handleMovieClick}>
+            Info
+          </button>
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
 export default MovieCard;
