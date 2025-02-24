@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ✅ Import navigate hook
 import api from "../services/api";
 import "./MovieTracker.css";
 
@@ -25,8 +25,9 @@ const MovieCard = ({ movie }) => {
       validPath || "https://via.placeholder.com/300x450.png?text=Movie+Poster"
     );
   }, [movie]);
+
   const handleMovieClick = () => {
-    navigate(`/movies/${movie.tmdb_id}`); // Changed from /movie to /movies
+    navigate(`/movies/${movie.tmdb_id}`);
   };
 
   return (
@@ -57,6 +58,7 @@ const MovieCard = ({ movie }) => {
 };
 
 function Home() {
+  const navigate = useNavigate(); // ✅ Define navigate inside Home()
   const [nowShowing, setNowShowing] = useState([]);
   const [popular, setPopular] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,8 @@ function Home() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
+    navigate(`/search?query=${encodeURIComponent(searchQuery)}`); // ✅ Redirects to SearchPage
+
     try {
       const response = await api.get(
         `/movies/search/?query=${encodeURIComponent(searchQuery)}`
@@ -99,24 +103,17 @@ function Home() {
 
   return (
     <div className="app-container">
-      {/* App Title and Search Bar Container */}
-      <div className="title-search-container">
-        <div className="app-title">
-          <span className="block">The</span>
-          <span className="block">
-            Movie
-            <form onSubmit={handleSearch} className="inline-search-form">
-              <input
-                type="text"
-                placeholder="Search a movie or a series"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-bar"
-              />
-            </form>
-          </span>
-          <span className="block">Tracker</span>
-        </div>
+      {/* Search Bar Container */}
+      <div className="search-container">
+        <form onSubmit={handleSearch} className="search-form">
+          <input
+            type="text"
+            placeholder="Search a movie or a series"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-bar"
+          />
+        </form>
       </div>
 
       {/* Currently Showing Section */}

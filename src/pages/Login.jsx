@@ -33,31 +33,31 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
+  
     try {
       const response = await axios.post("http://127.0.0.1:8000/api/token/", {
-        email, // Use email for authentication (matches CustomUser in Django)
+        email, // Ensure Django expects `email` instead of `username`
         password,
       });
-
-      const data = response.data;
-
-      if (!response.status === 200) {
-        throw new Error(data.detail || "Login failed");
-      }
-
-      // Store tokens in localStorage
-      localStorage.setItem("accessToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
-
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+  
+      const { access, refresh } = response.data;
+  
+      // ✅ Store tokens
+      localStorage.setItem("accessToken", access);
+      localStorage.setItem("refreshToken", refresh);
+  
+      // ✅ Set Axios default Authorization header
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+  
+      // ✅ Redirect to Home/Dashboard
+      window.location.href = "/home";
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      console.error("Login error:", err);
+      setError(err.response?.data?.detail || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const containerStyles = {
     backgroundColor: "#0D1B2A",
@@ -211,7 +211,7 @@ const LoginPage = () => {
             >
               You don't have an account?{" "}
               <a
-                href="/signup"
+                href="/register"
                 style={{
                   color: "#00BFFF",
                   textDecoration: "none",
