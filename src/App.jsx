@@ -6,9 +6,8 @@ import MovieDetail from "./pages/MovieDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
- import SearchPage from "./pages/SearchPage";
- import CollectionPage from "./pages/CollectionPage";
-
+import SearchPage from "./pages/SearchPage";
+import CollectionPage from "./pages/CollectionPage";
 
 const App = () => {
   return (
@@ -17,21 +16,20 @@ const App = () => {
       <Navbar />
       <div className="container">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/movies/:tmdbId" element={<ProtectedRoute><MovieDetail /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/collection" element={<CollectionPage />} /> 
-
+          <Route path="/collection" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
         </Routes>
       </div>
     </Router>
   );
 };
 
-// 🔹 Redirects if the user is already logged in
+// Redirects if the user is already logged in
 const AuthRedirect = () => {
   const navigate = useNavigate();
 
@@ -45,14 +43,14 @@ const AuthRedirect = () => {
   return null; // Prevents unnecessary renders
 };
 
-// 🔹 Protects routes that require authentication
+// Protects routes that require authentication
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("accessToken");
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!token) {
-      navigate("/"); // If not logged in, go to login
+      navigate("/login"); // If not logged in, go to login
     }
   }, [token, navigate]);
 

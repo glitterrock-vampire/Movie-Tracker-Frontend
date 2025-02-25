@@ -1,14 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
-import api from "../services/api";
-import "./MovieTracker.css";
 
 const MovieCard = ({ movie }) => {
   const navigate = useNavigate();
   const [imageSrc, setImageSrc] = useState("");
 
   useEffect(() => {
+    // Prefer poster_path, fallback to backdrop_path, then use placeholder
     const possiblePaths = [
       movie.poster_path
         ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -20,23 +18,24 @@ const MovieCard = ({ movie }) => {
 
     const validPath = possiblePaths.find((path) => path !== null);
     setImageSrc(
-      validPath || "https://via.placeholder.com/300x450.png?text=Movie+Poster"
+      validPath || "https://placehold.co/300x450?text=No+Image" // Reliable fallback
     );
   }, [movie]);
 
   const handleMovieClick = () => {
-    // Ensure you're using the correct identifier
-    // This might be 'id' or 'tmdb_id' depending on your API
-    navigate(`/movie/${movie.id || movie.tmdb_id}`);
+    navigate(`/movies/${movie.tmdb_id}`);
   };
 
   return (
     <div className="movie-card">
       <img
         src={imageSrc}
-        alt={movie.title}
+        alt={movie.title || "No title available"}
         className="movie-card-image cursor-pointer"
         onClick={handleMovieClick}
+        onError={(e) => {
+          e.target.src = "https://placehold.co/300x450?text=No+Image";
+        }}
       />
       {movie.vote_average && (
         <div className="movie-rating">
@@ -45,7 +44,7 @@ const MovieCard = ({ movie }) => {
         </div>
       )}
       <div className="movie-card-overlay">
-        <h3>{movie.title}</h3>
+        <h3>{movie.title || "Untitled Movie"}</h3>
         <div className="movie-actions">
           <button className="btn btn-watch">Watch</button>
           <button className="btn btn-info" onClick={handleMovieClick}>

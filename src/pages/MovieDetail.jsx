@@ -27,7 +27,7 @@ function MovieDetail() {
     const fetchMovieDetails = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/movies/${tmdbId}/`);
+        const response = await api.get(`/api/movies/${tmdbId}/`);
         setMovie(response.data);
       } catch (err) {
         console.error("Error fetching movie details:", err);
@@ -47,7 +47,7 @@ function MovieDetail() {
     const fetchRecommendations = async () => {
       try {
         setRecommendLoading(true);
-        const response = await api.get('/recommendations/');
+        const response = await api.get('/api/recommendations/');
         setRecommendedMovies(response.data.results || []);
       } catch (err) {
         console.error("Error fetching recommendations:", err);
@@ -66,7 +66,7 @@ function MovieDetail() {
 
     const fetchVideos = async () => {
       try {
-        const response = await api.get(`/movies/${tmdbId}/videos/`);
+        const response = await api.get(`/api/movies/${tmdbId}/videos/`);
         setVideos(response.data.videos || []);
       } catch (err) {
         console.error("Error fetching videos:", err);
@@ -86,7 +86,7 @@ function MovieDetail() {
         return;
       }
   
-      await api.post(`/collection/${tmdbId}/`);
+      await api.post(`/api/collection/${tmdbId}/`);
       alert("Movie added to watchlist!");
     } catch (err) {
       console.error("Error adding to watchlist:", err);
