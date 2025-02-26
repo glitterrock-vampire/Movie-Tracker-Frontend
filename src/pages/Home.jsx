@@ -66,6 +66,7 @@ function Home() {
   const [popular, setPopular] = useState([]);
   const [recommendations, setRecommendations] = useState([]); // State for recommendations
   const [searchResults, setSearchResults] = useState([]); // State for search results
+  const [searchType, setSearchType] = useState("all");
   const [loading, setLoading] = useState({
     nowShowing: true,
     popular: true,
@@ -87,7 +88,11 @@ function Home() {
       })
       .catch((err) => {
         console.error("Error fetching now showing movies:", err);
-        setError((prev) => ({ ...prev, nowShowing: "Failed to load currently showing movies. Please try again later." }));
+        setError((prev) => ({
+          ...prev,
+          nowShowing:
+            "Failed to load currently showing movies. Please try again later.",
+        }));
       })
       .finally(() => setLoading((prev) => ({ ...prev, nowShowing: false })));
 
@@ -98,7 +103,10 @@ function Home() {
       })
       .catch((err) => {
         console.error("Error fetching popular movies:", err);
-        setError((prev) => ({ ...prev, popular: "Failed to load popular movies. Please try again later." }));
+        setError((prev) => ({
+          ...prev,
+          popular: "Failed to load popular movies. Please try again later.",
+        }));
       })
       .finally(() => setLoading((prev) => ({ ...prev, popular: false })));
 
@@ -109,38 +117,88 @@ function Home() {
       })
       .catch((err) => {
         console.error("Error fetching recommendations:", err);
-        setError((prev) => ({ ...prev, recommendations: "Failed to load recommendations. Please try again later." }));
+        setError((prev) => ({
+          ...prev,
+          recommendations:
+            "Failed to load recommendations. Please try again later.",
+        }));
       })
-      .finally(() => setLoading((prev) => ({ ...prev, recommendations: false })));
+      .finally(() =>
+        setLoading((prev) => ({ ...prev, recommendations: false }))
+      );
 
     // No need for Promise.all; let each fetch run independently
   }, []);
-
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    setLoading((prev) => ({ ...prev, searchResults: true })); // Show loading for search
-    setError((prev) => ({ ...prev, searchResults: null })); // Clear search errors
+    setLoading((prev) => ({ ...prev, searchResults: true }));
+    setError((prev) => ({ ...prev, searchResults: null }));
 
     try {
-      const response = await api.get(
-        `/api/movies/search/?query=${encodeURIComponent(searchQuery)}`
+      let response = null; // Ensure only one API request is made
+
+      if (searchType === "person") {
+        response = await api.get(
+          `/api/search/advanced/?person=${encodeURIComponent(searchQuery)}`
+        );
+      } else if (searchType === "genre") {
+        const genresResponse = await api.get("/api/genres/");
+        const matchedGenre = genresResponse.data.find((genre) =>
+          genre.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        if (matchedGenre) {
+          response = await api.get(
+            `/api/search/advanced/?genre_id=${matchedGenre.tmdb_id}`
+          );
+        } else {
+          throw new Error("No matching genre found");
+        }
+      } else if (searchType === "title") {
+        response = await api.get(
+          `/api/search/advanced/?title=${encodeURIComponent(searchQuery)}`
+        );
+      } else {
+        // Default case: Try searching by person first, then title
+        const peopleResponse = await api.get(
+          `/api/people/search/?query=${encodeURIComponent(searchQuery)}`
+        );
+
+        if (peopleResponse.data.results?.length > 0) {
+          const personId = peopleResponse.data.results[0].tmdb_id;
+          response = await api.get(
+            `/api/search/advanced/?person_id=${personId}`
+          );
+        } else {
+          response = await api.get(
+            `/api/search/advanced/?title=${encodeURIComponent(searchQuery)}`
+          );
+        }
+      }
+
+      if (!response || !response.data.results) {
+        throw new Error("No results found.");
+      }
+
+      console.log("Fetched search results:", response.data.results); // Debugging
+      setSearchResults(response.data.results);
+
+      navigate(
+        `/search?query=${encodeURIComponent(searchQuery)}&type=${searchType}`
       );
-      setSearchResults(response.data.results || []);
-      navigate(`/search?query=${encodeURIComponent(searchQuery)}`); // Redirect to SearchPage
-      console.log("Search results:", response.data);
     } catch (err) {
       console.error("Search error:", err);
       setError((prev) => ({
         ...prev,
-        searchResults: "Failed to search movies. Please try again later.",
+        searchResults:
+          err.message || "Failed to search movies. Please try again later.",
       }));
     } finally {
       setLoading((prev) => ({ ...prev, searchResults: false }));
     }
   };
-
   // Check if all sections are still loading
   const isLoading = Object.values(loading).some((isLoading) => isLoading);
 
@@ -157,9 +215,19 @@ function Home() {
       {/* Search Bar Container */}
       <div className="search-container">
         <form onSubmit={handleSearch} className="search-form">
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value)}
+            className="search-type-select mr-2"
+          >
+            <option value="all">All</option>
+            <option value="title">Title</option>
+            <option value="person">Person</option>
+            <option value="genre">Genre</option>
+          </select>
           <input
             type="text"
-            placeholder="Search a movie or a series"
+            placeholder="Search movies, actors, genres..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-bar"
@@ -235,11 +303,24 @@ function Home() {
           ) : error.searchResults ? (
             <p className="error-message text-red-500">{error.searchResults}</p>
           ) : (
-            <div className="grid grid-cols-6 gap-6">
-              {searchResults.map((movie) => (
-                <MovieCard key={movie.id || movie.tmdb_id} movie={movie} />
-              ))}
-            </div>
+            <>
+              <pre
+                style={{ color: "white", overflowX: "auto", fontSize: "12px" }}
+              >
+                {JSON.stringify(searchResults, null, 2)}
+              </pre>{" "}
+              {/* 🔍 DEBUG: Prints all movies */}
+              <div className="grid grid-cols-6 gap-6">
+                {searchResults
+                  .filter((movie) => movie && movie.title) // ✅ Ensure movie is valid
+                  .map((movie, index) => (
+                    <MovieCard
+                      key={movie.id || movie.tmdb_id || index}
+                      movie={movie}
+                    />
+                  ))}
+              </div>
+            </>
           )}
         </section>
       )}
