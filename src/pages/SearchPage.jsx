@@ -1,106 +1,108 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
-import "./MovieTracker.css"; // Ensure this contains styling
+import api from "../services/api";
 
-const SearchPage = () => {
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [query, setQuery] = useState("");
-
+function SearchPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const searchQuery = new URLSearchParams(location.search).get("query");
-    if (!searchQuery) return;
-
-    setQuery(searchQuery);
-    fetchMovies(searchQuery);
-  }, [location.search]);
-
-  const fetchMovies = async (searchQuery) => {
+  const fetchMovies = async (query, type) => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const response = await axios.get(
-        `http://127.0.0.1:8000/api/movies/search/?query=${searchQuery}`
-      );
-      setMovies(response.data.results || []);
+      const token = localStorage.getItem("accessToken");
+      const config = token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+      let response;
+
+      if (type === "person") {
+        response = await api.get(
+          `/api/search/advanced/?person=${encodeURIComponent(query)}`,
+          config
+        );
+      } else if (type === "genre") {
+        const genresResponse = await api.get("/api/genres/", config);
+        const matchedGenre = genresResponse.data.find((genre) =>
+          genre.name.toLowerCase().includes(query.toLowerCase())
+        );
+        if (matchedGenre) {
+          response = await api.get(
+            `/api/search/advanced/?genre_id=${matchedGenre.tmdb_id}`,
+            config
+          );
+        } else {
+          setSearchResults([]);
+          setError("No matching genre found.");
+          return;
+        }
+      } else if (type === "title") {
+        response = await api.get(
+          `/api/search/advanced/?title=${encodeURIComponent(query)}`,
+          config
+        );
+      } else {
+        response = await api.get(
+          `/api/search/advanced/?title=${encodeURIComponent(query)}`,
+          config
+        );
+      }
+
+      console.log("Fetched search results:", response.data.results.length);
+      setSearchResults(response.data.results || []);
     } catch (err) {
       console.error("Search error:", err);
-      setError("Failed to load search results.");
+      setError("Failed to fetch some search results.");
+      setSearchResults([]); // Reset results on error, but keep UI usable
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query.trim()) {
-      navigate(`/search?query=${encodeURIComponent(query)}`);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get("query");
+    const type = params.get("type") || "title";
+    if (query) {
+      fetchMovies(query, type);
     }
-  };
-
-  const handleMovieClick = (tmdbId) => {
-    navigate(`/movies/${tmdbId}`); // ✅ Navigates to MovieDetail page
-  };
+  }, [location.search]);
 
   return (
-    <div className="search-results-container">
-      {/* Header with Search Bar */}
-      <header className="search-header">
-        {/* <div className="app-title">
-          <span>The</span>
-          <span>Movie</span>
-          <span>Tracker</span>
-        </div> */}
-
-        {/* Search Bar */}
-        <div className="inline-search-form">
-          <form onSubmit={handleSearch} className="search-form">
-            <input
-              type="text"
-              placeholder="🔍 Search a movie or a series"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="search-bar"
-            />
-            <button type="submit" className="search-button">🔍</button>
-          </form>
-        </div>
-      </header>
-
-      {/* Search Results */}
-      <h2 className="section-title">
-        Showing search results for: <span className="query-highlight">{query}</span>
-      </h2>
-
-      {loading && <p className="loading-message">Loading...</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && !error && movies.length === 0 && <p className="no-results">No movies found.</p>}
-
-      <div className="grid grid-cols-6">
-        {movies.map((movie) => (
-          <div key={movie.id} className="movie-card cursor-pointer" onClick={() => handleMovieClick(movie.tmdb_id)}>
-            <img
-              src={
-                movie.poster_path
-                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                  : "/placeholder.jpg"
-              }
-              alt={movie.title}
-              className="movie-card-image"
-            />
-            <div className="movie-card-overlay">
-              <h3>{movie.title}</h3>
-              <p className="movie-rating">⭐ {movie.vote_average?.toFixed(1)}</p>
+    <div className="search-page">
+      <h2>Search Results</h2>
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <p className="error-message">{error}</p>
+      ) : searchResults.length === 0 ? (
+        <p>No results found.</p>
+      ) : (
+        <div className="results-grid">
+          {searchResults.map((movie) => (
+            <div
+              key={movie.tmdb_id || movie.id}
+              className="movie-card"
+              onClick={() => navigate(`/movies/${movie.tmdb_id}`)}
+            >
+              <img
+                src={
+                  movie.poster_path
+                    ? `https://image.tmdb.org/t/p/w200${movie.poster_path}`
+                    : "https://placehold.co/200x300?text=No+Image"
+                }
+                alt={movie.title}
+              />
+              <p>{movie.title}</p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default SearchPage;
