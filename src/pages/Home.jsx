@@ -238,24 +238,6 @@ function Home() {
         </form>
       </div>
 
-      {/* Currently Showing Section */}
-      <section className="mb-8">
-        <h2 className="section-title">Currently Showing</h2>
-        {loading.nowShowing ? (
-          <div className="flex justify-center">
-            <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full"></div>
-          </div>
-        ) : error.nowShowing ? (
-          <p className="error-message text-red-500">{error.nowShowing}</p>
-        ) : (
-          <div className="grid grid-cols-4 gap-6">
-            {nowShowing.slice(0, 4).map((movie) => (
-              <MovieCard key={movie.id || movie.tmdb_id} movie={movie} />
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* Suggested To Watch Section (Replaced with Recommendations) */}
       <section className="mb-8">
         <h2 className="section-title">Suggested To Watch</h2>
