@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Bookmark, Star, Trash2 } from "lucide-react";
 import api from "../services/api";
 import "./MovieDetail.css";
-import "./MovieTracker.css";
+// import "./MovieTracker.css";
 
 function MovieDetail() {
   const { tmdbId } = useParams();
