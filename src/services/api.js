@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/", // Full URL to your backend
+  // baseURL: "http://127.0.0.1:8000/", // Full URL to your backend
+  baseURL: "https://movie-tracker-backend-5.onrender.com/",
   headers: {
     "Content-Type": "application/json",
   },
